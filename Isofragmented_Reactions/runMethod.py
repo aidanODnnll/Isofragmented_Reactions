@@ -7,6 +7,9 @@ from rdkit import Chem
 
 # os.environ['NEOS_EMAIL'] = 'user@email' # Replace with your own email, if you want to run CPLEX through NEOS 
 
+###########################
+#### Helper functions #####
+###########################
 
 def justSMILES(filename):
     lines = open(filename, 'r').read().splitlines()
@@ -52,6 +55,10 @@ def MakeDataDict(features,data):
             point += 1
     return res
 
+############################################
+######## Rules for the MILP model ##########
+############################################
+
 def StoichRule1(m, i):
     return -1*m.n*m.y[i] + m.z[i] <= m.s[i]
 
@@ -78,6 +85,10 @@ def makeEta2(m,i):
 def MakeIso(m):
     sums = sum(m.c[i]/m.w[i] for i in m.factors if  m.w[i] != 0 and m.w[i] <= 100  )
     return sums <= m.Lambda
+
+############################################
+############# MILP Model ###################
+############################################
 
 def findRxns(UnknownMoleculesToFeatures, Weights, NumberOfRxns, maxStoich, KnownMolecules, KnownMoleculesToFeatures, features, mol):   
     d = KnownMoleculesToFeatures
@@ -200,6 +211,10 @@ def findRxns(UnknownMoleculesToFeatures, Weights, NumberOfRxns, maxStoich, Known
         m.constL.add( expr >= 1 )
     return(sol,t-1)
 
+#######################################################################
+############ Code to calculate the enthalpy of formation ##############
+#######################################################################
+
 def determineEnthalpy(rxns, n, KnownEnthalpy, KnownMoleculesToFeatures, UnknownMoleculesToFeatures):
     lines = rxns.splitlines()
     rxnCount = 0
@@ -285,8 +300,8 @@ def Calculator(KnownEnthalpy, listR, numRxn, KnownMoleculesToFeatures, UnknownMo
                 dHrxn = dHrxnsqr**.5/abs(targetStoich)
                 dHrxnList += [dHrxn]
     return Estimate, dHrxnList
-Estimate, dHList = determineEnthalpy(results, n, EnthalpyOfFormation,\
-                                     KnownMoleculesToFeatures, UnknownMoleculesToFeatures)
+
+
 def findAverages(Estimate, dHlist):
     MultH = 0
     n = len(Estimate)
@@ -316,6 +331,9 @@ def findAverages(Estimate, dHlist):
     return(cMean, upper)
 
 
+####################################################
+######### Function to run the full model ###########
+####################################################
 
 def run(UnknownMoleculesTxt, KnownMoleculesTxt = [], UseNIST = True):
     NumberOfRxns = 40
